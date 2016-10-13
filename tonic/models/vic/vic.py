@@ -22,7 +22,6 @@ class VICRuntimeError(RuntimeError):
 
 # -------------------------------------------------------------------- #
 class VIC(object):
-
     def __init__(self, executable):
         if os.path.isfile(executable) and os.access(executable, os.X_OK):
             self.executable = executable
@@ -46,7 +45,6 @@ class VIC(object):
     def run(self, global_param, logdir=None, **kwargs):
         """
         Run VIC with specified global parameter file.
-
         Parameters
         ----------
         global_param: str
@@ -57,21 +55,21 @@ class VIC(object):
         **kwargs : key=value, optional
             Keyword arguments to pass to the VIC executable. Valid options are:
                 mpi_proc : int
-                    Specifies number of processors for MPI (must be integer).
+                    Specifies number of processors for MPI (must be integer or
+                    None).
                     Default is 1 processor.
+                mpi_exe : str
+                    If mpi_proc is not 1, then this is the path of MPI exe
                 valgrind : str or bool
                     Specifies path to valgrind executable. If bool and True,
                     valgrind will be used without specifying the full path.
-
         Returns
         --------
         returncode : int
             Return error code from VIC.
-
         Examples
         --------
         retcode = vic.run(global_param_path, logdir=".", mpi_proc=4)
-
         """
 
         if os.path.isfile(global_param):
@@ -106,11 +104,15 @@ class VIC(object):
 
         # Get mpi info
         mpi_proc = kwargs.pop('mpi_proc', None)
+        if isinstance(mpi_proc, int):
+            if mpi_proc == 1:
+                mpi_proc = None
         if mpi_proc is not None:
             if not isinstance(mpi_proc, int):
                 raise TypeError("number of processors must be specified as an"
                                 "integer")
-            self.args.extend(['mpiexec', '-np', '%.0d' % mpi_proc])
+            mpi_exe = kwargs.pop('mpi_exe', None)
+            self.args.extend([mpi_exe, '-np', '%.0d' % mpi_proc])
 
         # Get valgrind info
         valgrind = kwargs.pop('valgrind', None)
